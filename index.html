@@ -1,0 +1,114 @@
+<!doctype html>
+<html>
+  <head>
+    <title>YouSync</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages li { padding: 5px 10px; }
+      #messages li:nth-child(odd) { background: #eee; }
+      iframe {position:absolute; left: calc(50% - 350px); }
+
+    </style>
+  </head>
+  <body>
+
+    <div id="player"></div>
+    <ul id="messages"></ul>
+    <form action="">
+      <input id="m" autocomplete="off" /><button>Send</button>
+    </form>
+
+    <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+    <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+
+      var preloading = false;
+
+      var tag = document.createElement('script');
+
+      tag.src = "https://www.youtube.com/iframe_api";
+      var firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+      var player;
+      function onYouTubeIframeAPIReady() {
+        startNewYoutubeVideo('W9t3mbv2Hd8');
+      }
+
+      function startNewYoutubeVideo(videoId) {
+        player = new YT.Player('player', {
+          height: '390',
+          width: '640',
+          videoId: videoId,
+          events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange
+          }
+        });
+      }
+
+      function onPlayerReady(event) {
+        var videoPlayer = event.target;
+
+        preloading = true;
+
+        videoPlayer.mute();
+        videoPlayer.seekTo(1);
+      }
+
+      var done = false;
+      function onPlayerStateChange(event) {
+          var videoPlayer = event.target;
+          if (event.data == YT.PlayerState.PLAYING ) {
+              if(preloading)
+              {
+                  player.pauseVideo();
+                  player.seekTo(0);
+                  player.unMute();
+                  setupSocketIO(videoPlayer);
+                  preloading = false;
+              }
+          }
+      }
+
+      function setupSocketIO(videoPlayer) {
+        var socket = io();
+
+        $('form').submit(function(){
+          socket.emit('videoCommand', $('#m').val());
+          $('#m').val('');
+          return false;
+        });
+
+        socket.on('videoCommand', function(msg){
+          switch(msg){
+            case 'start':
+              videoPlayer.playVideo();
+            break;
+            case 'stop':
+              videoPlayer.stopVideo();
+            break;
+            case 'pause':
+              videoPlayer.pauseVideo();
+            break;
+            case 'restart':
+              videoPlayer.pauseVideo();
+              videoPlayer.seekTo(0);
+              videoPlayer.playVideo();
+            break;
+            default:
+              $('#messages').append($('<li>').text(msg));
+            break;
+          }
+
+        });
+      }
+    </script>    
+
+  </body>
+</html>

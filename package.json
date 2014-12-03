@@ -1,0 +1,9 @@
+{
+  "name": "YouSync",
+  "version": "0.0.1",
+  "description": "An example of how to use socket.io to sync youtube videos",
+  "dependencies": {
+    "express": "4.10.2",
+    "socket.io": "1.2.0"
+  }
+}
